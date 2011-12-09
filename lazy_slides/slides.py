@@ -1,4 +1,6 @@
+import argparse
 import logging
+import sys
 import urllib.request
 
 from . import flickr
@@ -42,17 +44,34 @@ def generate_slides(tags, filenames, outfile):
         outfile.write('\\end{frame}\n')
     outfile.write('\\end{document}\n')
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('tags', metavar='T', type=str, nargs='+',
+                        help='A tag on which to search and generate a slide.')
+    parser.add_argument('--verbose,-V', dest='verbose', action='store_true',
+                        help='Generate extra output.')
+
+    return parser.parse_args()
+
+def init_logging(verbose):
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.WARNING
+
+    logging.basicConfig(
+        level=level,
+        stream=sys.stdout)
+
 def run():
-    tags = ['double deuce', 'monkey', 'herd of llamas']
-    urls = search_photos(tags)
+    args = parse_args()
+    init_logging(args.verbose)
+
+    urls = search_photos(args.tags)
     filenames = download(urls)
 
     with open('slides.beamer', 'w') as outfile:
-        generate_slides(tags, filenames, outfile)
+        generate_slides(args.tags, filenames, outfile)
 
 if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stdout)
     run()
