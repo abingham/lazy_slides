@@ -46,10 +46,19 @@ def generate_slides(tags, filenames, outfile):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('tags', metavar='T', type=str, nargs='+',
-                        help='A tag on which to search and generate a slide.')
-    parser.add_argument('--verbose,-V', dest='verbose', action='store_true',
-                        help='Generate extra output.')
+    parser.add_argument(
+        'tags', metavar='T', type=str, nargs='+',
+        help='A tag on which to search and generate a slide.')
+    parser.add_argument(
+        '-V, --verbose', dest='verbose', action='store_true',
+        help='Generate extra output.')
+    parser.add_argument(
+        '-o, --output',
+        dest='output',
+        #action='store_const',
+        default='slides.beamer',
+        metavar='F',
+        help='The filename for the output.')
 
     return parser.parse_args()
 
@@ -70,7 +79,7 @@ def run():
     urls = search_photos(args.tags)
     filenames = download(urls)
 
-    with open('slides.beamer', 'w') as outfile:
+    with open(args.output, 'w') as outfile:
         generate_slides(args.tags, filenames, outfile)
 
 if __name__ == '__main__':

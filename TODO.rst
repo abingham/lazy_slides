@@ -4,3 +4,4 @@
 * optionally fail on no-results
 * proper setup.py with distribute or whatever seems best
   * easy_install, pip support
+* Scale images to the slide :\
