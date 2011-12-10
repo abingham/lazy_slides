@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
-        'tags', metavar='T', type=str, nargs='+',
+        'tags', metavar='KEYWORD', type=str, nargs='+',
         help='A tag on which to search and generate a slide.')
     parser.add_argument(
         '-V, --verbose', dest='verbose', action='store_true',
@@ -44,7 +44,7 @@ def init_logging(verbose):
         level=level,
         stream=sys.stdout)
 
-def run():
+def main():
     args = parse_args()
     init_logging(args.verbose)
 
