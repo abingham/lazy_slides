@@ -1,4 +1,5 @@
 import argparse
+import importlib
 import logging
 import sys
 import urllib.request
@@ -6,7 +7,6 @@ import urllib.request
 from . import download
 from . import generate
 from . import search
-
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +31,12 @@ def parse_args():
         dest='fail_on_missing',
         action='store_true',
         help='Fail when a tag generates no matches.')
+    parser.add_argument(
+        '-s, --search-function',
+        dest='search_function',
+        default='lazy_slides.flickr.search',
+        metavar='FUNCTION',
+        help='The Python function used to search for images URLs.')
 
     return parser.parse_args()
 
@@ -44,16 +50,21 @@ def init_logging(verbose):
         level=level,
         stream=sys.stdout)
 
-def init_search_function():
-    from . import flickr
+def init_search_function(search_function):
     from . import search
 
-    search.search_function = flickr.search
+    toks = search_function.split('.')
+    module_name = '.'.join(toks[:-1])
+    func_name = toks[-1]
+
+    mod = importlib.import_module(module_name)
+
+    search.search_function = getattr(mod, func_name)
 
 def main():
     args = parse_args()
     init_logging(args.verbose)
-    init_search_function()
+    init_search_function(args.search_function)
 
     urls = search.search_photos(args.tags)
 
