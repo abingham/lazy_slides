@@ -44,9 +44,16 @@ def init_logging(verbose):
         level=level,
         stream=sys.stdout)
 
+def init_search_function():
+    from . import flickr
+    from . import search
+
+    search.search_function = flickr.search
+
 def main():
     args = parse_args()
     init_logging(args.verbose)
+    init_search_function()
 
     urls = search.search_photos(args.tags)
 
@@ -70,4 +77,4 @@ def main():
         generate.generate_slides(tags, filenames, outfile)
 
 if __name__ == '__main__':
-    run()
+    main()

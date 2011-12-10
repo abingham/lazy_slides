@@ -5,16 +5,16 @@ from . import flickr
 
 log = logging.getLogger(__name__)
 
+search_function = None
+
 def search_photos(tags):
     for tag in tags:
         log.info('searching for images tagged with "{}"'.format(tag))
+        url = search_function(tag=tag)
 
-        photos = flickr.photos_search(tags=tag, per_page=1)
-
-        if not photos:
+        if url is None:
             log.warning('No results for "{}"'.format(tag))
-            yield (tag, None)
         else:
-            photo = photos[0]
-            log.info('found photo: {}'.format(photo))
-            yield (tag, photo.getURL(size='Medium', urlType='source'))
+            log.info('found photo: {}'.format(url))
+
+        yield (tag, url)
