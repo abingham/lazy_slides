@@ -97,7 +97,7 @@ def main():
     tags = [u[0] for u in urls]
     urls = [u[1] for u in urls]
 
-    filenames = list(download.download(urls))
+    filenames = list(map(manipulation.convert, download.download(urls)))
 
     for filename in filenames:
         manipulation.resize(
