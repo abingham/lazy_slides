@@ -36,6 +36,10 @@ setup(
         #'pygame',
         ],
 
+    package_data = {
+        'lazy_slides.dummy': ['*.gif', '*.jpg'],
+        },
+
     entry_points = {
         'console_scripts': [
             'lazy_slides = lazy_slides.slides:main',
