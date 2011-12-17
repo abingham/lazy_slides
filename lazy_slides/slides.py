@@ -38,6 +38,20 @@ def parse_args():
         default='lazy_slides.flickr.search',
         metavar='FUNCTION',
         help='The Python function used to search for images URLs.')
+    parser.add_argument(
+        '-W, --image-width',
+        dest='image_width',
+        type=int,
+        default=200,
+        metavar='INT',
+        help='The width of the slide image.')
+    parser.add_argument(
+        '-H, --image-height',
+        dest='image_height',
+        type=int,
+        default=200,
+        metavar='INT',
+        help='The height of the slide image.')
 
     return parser.parse_args()
 
@@ -86,7 +100,11 @@ def main():
     filenames = list(download.download(urls))
 
     for filename in filenames:
-        manipulation.resize(filename, filename, (300, 300))
+        manipulation.resize(
+            filename,
+            filename,
+            (args.image_width,
+             args.image_height))
 
     log.info('Writing output to file {}'.format(args.output))
     with open(args.output, 'w') as outfile:
