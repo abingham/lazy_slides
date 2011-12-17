@@ -21,11 +21,11 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
-        'Intended Audience :: General', # TODO
+        'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        # 'Topic :: Games/Entertainment :: Arcade',
+        'Topic :: Multimedia :: Graphics :: Presentation',
         ],
     platforms='any',
     setup_requires=[],

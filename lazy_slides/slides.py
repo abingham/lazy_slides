@@ -6,6 +6,7 @@ import urllib.request
 
 from . import download
 from . import generate
+from . import manipulation
 from . import search
 
 log = logging.getLogger(__name__)
@@ -79,11 +80,15 @@ def main():
         return True
     urls = list(filter(filter_failures, urls))
 
-    tags = (u[0] for u in urls)
-    urls = (u[1] for u in urls)
+    tags = [u[0] for u in urls]
+    urls = [u[1] for u in urls]
 
-    filenames = download.download(urls)
+    filenames = list(download.download(urls))
 
+    for filename in filenames:
+        manipulation.resize(filename, filename, (300, 300))
+
+    log.info('Writing output to file {}'.format(args.output))
     with open(args.output, 'w') as outfile:
         generate.generate_slides(tags, filenames, outfile)
 
