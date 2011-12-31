@@ -76,28 +76,39 @@ def init_search_function(search_function):
 
     search.search_function = getattr(mod, func_name)
 
+def zip_filter(func, seq, *seqs):
+    for tup in zip(seq, *seqs):
+        if func(tup[0]):
+            yield tup
+
 def main():
     args = parse_args()
     init_logging(args.verbose)
     init_search_function(args.search_function)
 
-    urls = search.search_photos(args.tags)
-
-    def filter_failures(match):
-        if match[1] is None:
+    def filter_failures(urls):
+        if url is None:
             if args.fail_on_missing:
                 raise ValueError(
                     'No matching images for tag "{}"'.format(
-                        match[0]))
-            else:
-                return False
-        return True
-    urls = list(filter(filter_failures, urls))
+                        tag))
+            return False
 
-    tags = [u[0] for u in urls]
-    urls = [u[1] for u in urls]
+        else:
+            return True
 
-    filenames = list(map(manipulation.convert, download.download(urls)))
+    for tag in args.tags:
+        urls = search.search_photos(tags)
+
+        urls = zip_filter(filter_failures, urls, args.tags)
+        urls = list(filter_failures(args.tags, urls))
+
+        tags = [u[0] for u in urls]
+        urls = [u[1] for u in urls]
+
+        filenames = list(map(
+                manipulation.convert,
+                download.download(urls)))
 
     for filename in filenames:
         manipulation.resize(
