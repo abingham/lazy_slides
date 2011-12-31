@@ -28,13 +28,4 @@ def convert(infilename, target_type='png'):
     MagickReadImage(wand, infilename.encode('utf-8'))
     MagickWriteImage(wand, outfilename.encode('utf-8'))
 
-    # TODO: Reconsider this. The deletion should probably occur
-    # elsewhere (if anywhere.) Having it here will mess with caching,
-    # etc.
-    #
-    # Delete original
-    if infilename != outfilename:
-        log.debug('Deleting {}'.format(infilename))
-        os.remove(infilename)
-
     return outfilename
