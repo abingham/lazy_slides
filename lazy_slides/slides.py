@@ -149,18 +149,18 @@ def main():
         in_filenames)
 
     # Resize the converted files.
-    out_filenames = map(
-        lambda fname: manipulation.resize(
-            fname,
-            fname,
-            (args.image_width,
-             args.image_height)),
-        out_filenames)
+    #out_filenames = map(
+    #    lambda fname: manipulation.resize(
+    #        fname,
+    #        fname,
+    #        (args.image_width,
+    #         args.image_height)),
+    #    out_filenames)
 
     # Generate the slideshow.
     log.info('Writing output to file {}'.format(args.output))
     with open(args.output, 'w') as outfile:
-        generate.generate_slides(tags, out_filenames, outfile)
+        generate.generate_slides(tags, out_filenames, outfile, args)
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,7 @@
-def generate_slides(tags, filenames, outfile):
+def generate_slides(tags,
+                    filenames,
+                    outfile,
+                    args):
     '''Generate a beamer slideshow.
 
     :param tags: The tags used to find the images in the slideshow.
@@ -13,7 +16,10 @@ def generate_slides(tags, filenames, outfile):
         outfile.write('\\begin{frame}\n')
         outfile.write('\\frametitle{{{}}}'.format(tag))
         outfile.write('\\begin{center}\n')
-        outfile.write('\\includegraphics[]{{{}}}'.format(filename))
+        outfile.write('\\includegraphics[width={width}px, height={height}px]{{{filename}}}'.format(
+                width=args.image_width,
+                height=args.image_height,
+                filename=filename))
         outfile.write('\\end{center}\n')
         outfile.write('\\end{frame}\n')
     outfile.write('\\end{document}\n')
