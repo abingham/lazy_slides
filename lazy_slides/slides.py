@@ -101,57 +101,29 @@ def init_search_function(search_function):
 
     search.search_function = getattr(mod, func_name)
 
+def process_tag(tag, args):
+    url = search.search_photos(tag)
+    if url is None:
+        if args.fail_on_missing:
+            raise ValueError(
+                'No matching images for tag "{}"'.format(tag))
+        return
+
+    in_filename = download.download(url)
+    out_filename = manipulation.convert(in_filename)
+    return (tag, out_filename)
+
 def main():
     args = parse_args()
     init_logging(args.verbose)
     init_search_function(args.search_function)
 
-    def filter_failures(url_tag):
-        '''Filter a list of (url,tag) tuples for missing urls.
-        '''
-        url = url_tag[0]
-        tag = url_tag[1]
-
-        if url is None:
-            # Optionally throw if the URL is None. This indicates that
-            # a search files for a tag.
-            if args.fail_on_missing:
-                raise ValueError(
-                    'No matching images for tag "{}"'.format(
-                        tag))
-
-            return False
-
-        else:
-            return True
-
-    # Search the image source for the specified tags.
-    urls = map(
-        search.search_photos,
-        args.tags)
-
-    # Filter out any failures.
-    url_tags = filter(
-        filter_failures,
-        zip(urls, args.tags))
-
-    # Split out urls and tags into seperate sequences.
-    urls, tags = zip(*url_tags)
-
-    # Schedule the downloads and remember the destination files.
-    in_filenames = map(
-        download.download,
-        urls)
-
-    # Convert the downloaded files into PNGs.
-    out_filenames = map(
-        manipulation.convert,
-        in_filenames)
+    tags, filenames = zip(*map(lambda tag: process_tag(tag, args), args.tags))
 
     # Generate the slideshow.
     log.info('Writing output to file {}'.format(args.output))
     with open(args.output, 'w') as outfile:
-        generate.generate_slides(tags, out_filenames, outfile, args)
+        generate.generate_slides(tags, filenames, outfile, args)
 
 if __name__ == '__main__':
     main()
