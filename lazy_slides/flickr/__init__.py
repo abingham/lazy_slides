@@ -17,4 +17,11 @@ def search(tag):
     photos = photos_search(tags=tag, per_page=1)
     if not photos:
         return None
-    return photos[0].getURL(size='Medium', urlType='source')
+
+    # Find the largest available version of this file.
+    sizes = photos[0].getSizes()
+    sizes.sort(key=lambda size: size['width'], reverse=True)
+
+    return photos[0].getURL(
+        size=sizes[0]['label'],
+        urlType='source')
