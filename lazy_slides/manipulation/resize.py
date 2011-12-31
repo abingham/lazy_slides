@@ -17,3 +17,5 @@ def resize(infilename,
     MagickReadImage(wand, infilename.encode('utf-8'))
     MagickScaleImage(wand, new_size[0], new_size[1])
     MagickWriteImage(wand, outfilename.encode('utf-8'))
+
+    return outfilename

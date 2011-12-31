@@ -86,7 +86,10 @@ def main():
     init_logging(args.verbose)
     init_search_function(args.search_function)
 
-    def filter_failures(urls):
+    def filter_failures(url_tag):
+        url = url_tag[0]
+        tag = url_tag[1]
+
         if url is None:
             if args.fail_on_missing:
                 raise ValueError(
@@ -97,29 +100,36 @@ def main():
         else:
             return True
 
-    for tag in args.tags:
-        urls = search.search_photos(tags)
+    urls = map(
+        search.search_photos,
+        args.tags)
 
-        urls = zip_filter(filter_failures, urls, args.tags)
-        urls = list(filter_failures(args.tags, urls))
+    url_tags = filter(
+        filter_failures,
+        zip(urls, args.tags))
 
-        tags = [u[0] for u in urls]
-        urls = [u[1] for u in urls]
+    urls, tags = zip(*url_tags)
 
-        filenames = list(map(
-                manipulation.convert,
-                download.download(urls)))
+    in_filenames = map(
+        download.download,
+        urls)
 
-    for filename in filenames:
-        manipulation.resize(
-            filename,
-            filename,
+    out_filenames = map(
+        manipulation.convert,
+        in_filenames)
+
+    out_filenames = map(
+        lambda fname: manipulation.resize(
+            fname,
+            fname,
             (args.image_width,
-             args.image_height))
+             args.image_height)),
+        out_filenames)
 
     log.info('Writing output to file {}'.format(args.output))
+
     with open(args.output, 'w') as outfile:
-        generate.generate_slides(tags, filenames, outfile)
+        generate.generate_slides(tags, out_filenames, outfile)
 
 if __name__ == '__main__':
     main()
