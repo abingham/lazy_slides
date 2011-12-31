@@ -1,3 +1,9 @@
+'''This implements a search method using flickr.com.
+
+This is built on and completely indebted to the work done by James
+Clarke on the flickr module contained in this package.
+'''
+
 from .flickr import photos_search
 
 

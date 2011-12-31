@@ -13,6 +13,11 @@ log = logging.getLogger(__name__)
 
 
 def parse_args():
+    '''Parse the command line arguments.
+
+    :return: The "namespace object" return by
+      `argparse.ArgumentParser.parse_args()`.
+    '''
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
         'tags', metavar='KEYWORD', type=str, nargs='+',
@@ -56,6 +61,14 @@ def parse_args():
     return parser.parse_args()
 
 def init_logging(verbose):
+    '''Initialized the logging system.
+
+    If `verbose` is `True`, the logging level will be
+    `DEBUG`. Otherwise, it'll be `WARNING`.
+
+    :param verbose: Whether logging should be verbose.
+    :type verbose: bool
+    '''
     if verbose:
         level = logging.DEBUG
     else:
@@ -66,6 +79,18 @@ def init_logging(verbose):
         stream=sys.stdout)
 
 def init_search_function(search_function):
+    '''Initialize the search function.
+
+    This takes a function specified by its fully-qualified name. This
+    imports the necessary module(s) and looks up the function in that
+    module. Once it's found, this sets
+    `lazy_slides.search.search_function` to that function.
+
+    :param search_function: The fully-qualified name of a function to
+      search for image matches.
+    :type search_function: str
+    '''
+
     from . import search
 
     toks = search_function.split('.')
@@ -76,48 +101,54 @@ def init_search_function(search_function):
 
     search.search_function = getattr(mod, func_name)
 
-def zip_filter(func, seq, *seqs):
-    for tup in zip(seq, *seqs):
-        if func(tup[0]):
-            yield tup
-
 def main():
     args = parse_args()
     init_logging(args.verbose)
     init_search_function(args.search_function)
 
     def filter_failures(url_tag):
+        '''Filter a list of (url,tag) tuples for missing urls.
+        '''
         url = url_tag[0]
         tag = url_tag[1]
 
         if url is None:
+            # Optionally throw if the URL is None. This indicates that
+            # a search files for a tag.
             if args.fail_on_missing:
                 raise ValueError(
                     'No matching images for tag "{}"'.format(
                         tag))
+
             return False
 
         else:
             return True
 
+    # Search the image source for the specified tags.
     urls = map(
         search.search_photos,
         args.tags)
 
+    # Filter out any failures.
     url_tags = filter(
         filter_failures,
         zip(urls, args.tags))
 
+    # Split out urls and tags into seperate sequences.
     urls, tags = zip(*url_tags)
 
+    # Schedule the downloads and remember the destination files.
     in_filenames = map(
         download.download,
         urls)
 
+    # Convert the downloaded files into PNGs.
     out_filenames = map(
         manipulation.convert,
         in_filenames)
 
+    # Resize the converted files.
     out_filenames = map(
         lambda fname: manipulation.resize(
             fname,
@@ -126,8 +157,8 @@ def main():
              args.image_height)),
         out_filenames)
 
+    # Generate the slideshow.
     log.info('Writing output to file {}'.format(args.output))
-
     with open(args.output, 'w') as outfile:
         generate.generate_slides(tags, out_filenames, outfile)
 

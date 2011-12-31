@@ -8,6 +8,13 @@ log = logging.getLogger(__name__)
 def resize(infilename,
            outfilename,
            new_size):
+    '''Resize an image file.
+
+    :param infilename: The input image file name.
+    :param outfilename: The output image file name.
+    :param new_size: A tuple (width, height) of the new image size.
+    '''
+
     log.info('Resizing {} to {}. New size = {}'.format(
             infilename,
             outfilename,
