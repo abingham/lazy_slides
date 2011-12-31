@@ -36,4 +36,4 @@ def search_photos(tag):
     else:
         log.info('found photo: {}'.format(url))
 
-    yield url
+    return url

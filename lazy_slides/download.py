@@ -34,4 +34,4 @@ def download(url):
         with open(filename, 'wb') as outfile:
             outfile.write(infile.read())
 
-    yield filename
+    return filename
