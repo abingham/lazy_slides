@@ -3,7 +3,6 @@ import concurrent.futures as futures
 import importlib
 import logging
 import sys
-import urllib.request
 
 from . import download
 from . import generate
@@ -126,10 +125,12 @@ class Builder:
            was no match, filename will be None.
         '''
 
-        url = search.search_photos(tag)
-        out_filename = None
-
-        if url is not None:
+        try:
+            url = search.search_photos(tag)
+        except KeyError as e:
+            log.warning(e)
+            out_filename = None
+        else:
             in_filename = download.download(url)
             out_filename = manipulation.convert(in_filename)
 
@@ -142,7 +143,7 @@ class Builder:
 
         if rslt[1] is None:
             if self.args.fail_on_missing:
-                raise ValueError('No match for {}'.format(rslt[0]))
+                raise ValueError('No match for "{}"'.format(rslt[0]))
             return False
         else:
             return True
@@ -176,7 +177,11 @@ def main():
     init_search_function(args.search_function)
 
     bld = Builder(args)
-    bld.run()
+
+    try:
+        bld.run()
+    except Exception as e:
+        log.error(e)
 
 if __name__ == '__main__':
     main()

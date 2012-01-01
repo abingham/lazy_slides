@@ -17,6 +17,7 @@ def search_photos(tag):
     it's set before you use this.
 
     :param tag: The tag to search on.
+    :raise KeyError: No match is found for `tag`.
     :return: A URL, or None.
     '''
     log.info('search function: {}.{}'.format(
@@ -32,8 +33,7 @@ def search_photos(tag):
     url = search_function(tag=tag)
 
     if url is None:
-        log.warning('No results for "{}"'.format(tag))
-    else:
-        log.info('found photo: {}'.format(url))
+        raise KeyError('No results for "{}"'.format(tag))
 
+    log.info('found photo: {}'.format(url))
     return url
