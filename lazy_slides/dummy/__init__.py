@@ -7,6 +7,9 @@ import os
 
 
 def search(tag):
+    if tag == 'fail':
+        return None
+
     path = os.path.abspath(__file__)
     dirname = os.path.split(path)[0]
     return 'file://{}'.format(
