@@ -109,63 +109,74 @@ def init_search_function(search_function):
 
     search.search_function = getattr(mod, func_name)
 
-def process_tag(tag):
-    '''Search, download, and convert a single image based on a single
-    tag.
+class Builder:
+    def __init__(self, args):
+        self.args = args
 
-    :param tag: The tag to search on.
-    :param throw_on_failure: Whether an exception should be thrown if
-      when no match is found.
+    @classmethod
+    def process_tag(cls, tag):
+        '''Search, download, and convert a single image based on a
+        single tag.
 
-    :return: A tuple (tag, filename) defining the match. If there was
-       no match, filename will be None.
-    '''
-    url = search.search_photos(tag)
-    out_filename = None
+        :param tag: The tag to search on.
+        :param throw_on_failure: Whether an exception should be thrown
+          if when no match is found.
 
-    if url is not None:
-        in_filename = download.download(url)
-        out_filename = manipulation.convert(in_filename)
+        :return: A tuple (tag, filename) defining the match. If there
+           was no match, filename will be None.
+        '''
 
-    return (tag, out_filename)
+        url = search.search_photos(tag)
+        out_filename = None
+
+        if url is not None:
+            in_filename = download.download(url)
+            out_filename = manipulation.convert(in_filename)
+
+        return (tag, out_filename)
+
+    def filter_failure(self, rslt):
+        '''Filter out failed searches, throwing if we're configured to
+        do so.
+        '''
+
+        if rslt[1] is None:
+            if self.args.fail_on_missing:
+                raise ValueError('No match for {}'.format(rslt[0]))
+            return False
+        else:
+            return True
+
+    def run(self):
+        # Determine how many workers we should use. If no number is
+        # specified, make one per tag.
+        num_workers = self.args.num_workers
+        if num_workers == 0:
+            num_workers = len(self.args.tags)
+        log.info('Using {} workers'.format(num_workers))
+
+        # Run the searches/downloads concurrently.
+        with futures.ThreadPoolExecutor(num_workers) as e:
+            results = e.map(
+                Builder.process_tag,
+                self.args.tags)
+
+            # Filter out match failures
+            results = filter(self.filter_failure, results)
+            tags, filenames = zip(*results)
+
+        # Generate the slideshow.
+        log.info('Writing output to file {}'.format(self.args.output))
+        with open(self.args.output, 'w') as outfile:
+            generate.generate_slides(tags, filenames, outfile, self.args)
 
 def main():
     args = parse_args()
     init_logging(args.verbose)
     init_search_function(args.search_function)
 
-    # Determine how many workers we should use. If no number is
-    # specified, make one per tag.
-    num_workers = args.num_workers
-    if num_workers == 0:
-        num_workers = len(args.tags)
-    log.info('Using {} workers'.format(num_workers))
-
-    # Run the searches/downloads concurrently.
-    executor = futures.ThreadPoolExecutor(num_workers)
-    results = executor.map(
-        process_tag,
-        args.tags)
-
-    def filter_failure(rslt):
-        '''Filter out failed searches, throwing if we're configured to
-        do so.
-        '''
-        if rslt[1] is None:
-            if args.fail_on_missing:
-                raise ValueError('No match for {}'.format(rslt[0]))
-            return False
-        else:
-            return True
-
-    # Filter out match failures
-    results = filter(filter_failure, results)
-    tags, filenames = zip(*results)
-
-    # Generate the slideshow.
-    log.info('Writing output to file {}'.format(args.output))
-    with open(args.output, 'w') as outfile:
-        generate.generate_slides(tags, filenames, outfile, args)
+    bld = Builder(args)
+    bld.run()
 
 if __name__ == '__main__':
     main()
