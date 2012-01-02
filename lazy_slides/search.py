@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 # takes in a tag and finds a matching URL.
 search_function = None
 
-def search_photos(tag):
+def search(tag):
     '''Search for an image file matching a given tag using the
     configured search function.
 
@@ -17,8 +17,9 @@ def search_photos(tag):
     it's set before you use this.
 
     :param tag: The tag to search on.
+    :raise ValueError: The search function is not set.
     :raise KeyError: No match is found for `tag`.
-    :return: A URL, or None.
+    :return: A URL.
     '''
     log.info('search function: {}.{}'.format(
             search_function.__module__,

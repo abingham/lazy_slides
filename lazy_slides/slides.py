@@ -2,8 +2,11 @@ import argparse
 import concurrent.futures as futures
 import importlib
 import logging
+import os
 import sys
 
+from .cache import open_cache
+from .cpu_count import cpu_count
 from . import download
 from . import generate
 from . import manipulation
@@ -64,6 +67,12 @@ def parse_args():
         default=0,
         metavar='INT',
         help='The number of worker threads or processes to use.')
+    parser.add_argument(
+        '-d, --directory',
+        dest='directory',
+        default='.lazy_slides',
+        metavar='DIRECTORY',
+        help='The directory used to hold lazy-slides data.')
 
     return parser.parse_args()
 
@@ -111,65 +120,53 @@ def init_search_function(search_function):
 class Builder:
     def __init__(self, args):
         self.args = args
+        self.directory = self.args.directory
 
-    @classmethod
-    def process_tag(cls, tag):
+    def fetch_file(self, tag):
         '''Search, download, and convert a single image based on a
         single tag.
-
-        :param tag: The tag to search on.
-        :param throw_on_failure: Whether an exception should be thrown
-          if when no match is found.
-
-        :return: A tuple (tag, filename) defining the match. If there
-           was no match, filename will be None.
         '''
+        url = search.search(tag)
+        filename = download.download(url, self.directory)
+        return (tag, manipulation.convert(filename))
 
-        try:
-            url = search.search_photos(tag)
-        except KeyError as e:
-            log.warning(e)
-            out_filename = None
-        else:
-            in_filename = download.download(url)
-            out_filename = manipulation.convert(in_filename)
+    def run(self, cache):
+        # Find tag->file mappings in existing cache
+        tag_map = { t:cache.get(t) for t in set(self.args.tags) }
 
-        return (tag, out_filename)
+        # Figure out which tags are missing files
+        missing_tags = [t for t,f in tag_map.items() if f is None]
 
-    def filter_failure(self, rslt):
-        '''Filter out failed searches, throwing if we're configured to
-        do so.
-        '''
-
-        if rslt[1] is None:
-            if self.args.fail_on_missing:
-                raise ValueError('No match for "{}"'.format(rslt[0]))
-            return False
-        else:
-            return True
-
-    def run(self):
         # Determine how many workers we should use. If no number is
         # specified, make one per tag.
         num_workers = self.args.num_workers
-        if num_workers == 0:
-            num_workers = len(self.args.tags)
+        if num_workers < 1:
+            try:
+                num_workers = cpu_count()
+            except NotImplementedError:
+                log.info('num_cpus() not implemented. Using default worker count.')
+                num_workers = 4
+
         log.info('Using {} workers'.format(num_workers))
 
-        # Run the searches/downloads concurrently.
+        # Download and png-convert files for the missing tags
         with futures.ThreadPoolExecutor(num_workers) as e:
-            results = e.map(
-                Builder.process_tag,
-                self.args.tags)
+            tag_map.update(
+                dict(e.map(self.fetch_file,
+                           missing_tags)))
 
-            # Filter out match failures
-            results = filter(self.filter_failure, results)
-            tags, filenames = zip(*results)
+        # Update the cache with newly-retrieved files
+        for tag in missing_tags:
+            cache.set(tag, tag_map[tag])
 
         # Generate the slideshow.
         log.info('Writing output to file {}'.format(self.args.output))
         with open(self.args.output, 'w') as outfile:
-            generate.generate_slides(tags, filenames, outfile, self.args)
+            generate.generate_slides(
+                self.args.tags,
+                tag_map,
+                outfile,
+                self.args)
 
 def main():
     args = parse_args()
@@ -179,9 +176,15 @@ def main():
     bld = Builder(args)
 
     try:
-        bld.run()
-    except Exception as e:
-        log.error(e)
+        if not os.path.exists(args.directory):
+            log.info('Creating data directory: {}'.format(args.directory))
+            os.makedirs(args.directory)
+
+        cache_file = os.path.join(args.directory, 'cache.db')
+        with open_cache(cache_file, 100) as cache:
+            bld.run(cache)
+    except Exception:
+        log.exception('Exception while building slides:')
 
 if __name__ == '__main__':
     main()

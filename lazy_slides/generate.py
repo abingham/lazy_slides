@@ -1,5 +1,5 @@
 def generate_slides(tags,
-                    filenames,
+                    tag_map,
                     outfile,
                     args):
     '''Generate a beamer slideshow.
@@ -12,14 +12,14 @@ def generate_slides(tags,
     outfile.write('\\documentclass{beamer}\n')
     outfile.write('\\usetheme{Copenhagen}\n')
     outfile.write('\\begin{document}\n')
-    for tag, filename in zip(tags, filenames):
+    for tag in tags:
         outfile.write('\\begin{frame}\n')
         outfile.write('\\frametitle{{{}}}'.format(tag))
         outfile.write('\\begin{center}\n')
         outfile.write('\\includegraphics[width={width}px, height={height}px]{{{filename}}}'.format(
                 width=args.image_width,
                 height=args.image_height,
-                filename=filename))
+                filename=tag_map[tag]))
         outfile.write('\\end{center}\n')
         outfile.write('\\end{frame}\n')
     outfile.write('\\end{document}\n')
