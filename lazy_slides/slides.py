@@ -132,7 +132,7 @@ class Builder:
 
     def run(self, cache):
         # Find tag->file mappings in existing cache
-        tag_map = { t:cache.get(t) for t in set(self.args.tags) }
+        tag_map = { t:cache.get(str(search.search_function), t) for t in set(self.args.tags) }
 
         # Figure out which tags are missing files
         missing_tags = [t for t,f in tag_map.items() if f is None]
@@ -144,6 +144,7 @@ class Builder:
             try:
                 num_workers = cpu_count()
             except NotImplementedError:
+
                 log.info('num_cpus() not implemented. Using default worker count.')
                 num_workers = 4
 
@@ -157,7 +158,7 @@ class Builder:
 
         # Update the cache with newly-retrieved files
         for tag in missing_tags:
-            cache.set(tag, tag_map[tag])
+            cache.set(str(search.search_function), tag, tag_map[tag])
 
         # Generate the slideshow.
         log.info('Writing output to file {}'.format(self.args.output))

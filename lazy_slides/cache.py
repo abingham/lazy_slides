@@ -13,11 +13,13 @@ Base = declarative_base()
 class Entry(Base):
     __tablename__ = 'entries'
 
+    engine = Column(String, primary_key=True)
     tag = Column(String, primary_key=True)
     filename = Column(String)
     timestamp = Column(DateTime)
 
-    def __init__(self, tag, filename, timestamp=None):
+    def __init__(self, engine, tag, filename, timestamp=None):
+        self.engine = engine
         self.tag = tag
         self.filename = filename
         if timestamp:
@@ -26,7 +28,8 @@ class Entry(Base):
             self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
-        return '<Entry("{}", "{}", {})>'.format(
+        return '<Entry(engine="{}", tag="{}", filename="{}", timestamp={})>'.format(
+            self.engine,
             self.tag,
             self.filename,
             self.timestamp)
@@ -42,13 +45,13 @@ class Cache:
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def _get_entry(self, tag):
-        return self.session.query(Entry).filter_by(tag=tag).first()
+    def _get_entry(self, engine, tag):
+        return self.session.query(Entry).filter_by(tag=tag, engine=engine).first()
 
-    def get(self, tag):
-        log.info('retrieving from cache: {}'.format(tag))
+    def get(self, engine, tag):
+        log.info('retrieving from cache: {}, {}'.format(engine, tag))
 
-        entry = self._get_entry(tag)
+        entry = self._get_entry(engine, tag)
         if not entry:
             return None
 
@@ -60,14 +63,15 @@ class Cache:
 
         return entry.filename
 
-    def set(self, tag, filename):
-        log.info('Cache set: {} -> {}'.format(tag, filename))
+    def set(self, engine, tag, filename):
+        log.info('Cache set: {}, {} -> {}'.format(engine, tag, filename))
 
-        e = self._get_entry(tag)
+        e = self._get_entry(engine, tag)
         if e:
             e.filename = filename
         else:
-            e = Entry(tag=tag,
+            e = Entry(engine=engine,
+                      tag=tag,
                       filename=filename)
             self.session.add(e)
 
