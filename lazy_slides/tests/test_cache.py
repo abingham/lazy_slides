@@ -1,5 +1,7 @@
 import unittest
 
+import sqlalchemy
+
 from lazy_slides.cache import open_cache
 
 from lazy_slides.tests.util import (remove, temp_file)
@@ -37,6 +39,20 @@ class CacheTest(unittest.TestCase):
                 self.assertEqual(cache.get(tag), filename)
 
             self.assertEqual(cache.get(tag), None)
+
+    def test_set_overwrite(self):
+        tag = 'tag'
+        filename = 'temp_file'
+        filename2 = 'temp_file2'
+
+        with open_cache(self.db_file, 1000) as cache:
+            with temp_file(filename):
+                cache.set(tag, filename)
+                self.assertEqual(cache.get(tag), filename)
+
+            with temp_file(filename2):
+                cache.set(tag, filename2)
+                self.assertEqual(cache.get(tag), filename2)
 
     def test_size(self):
         with open_cache(self.db_file, 1000) as cache:

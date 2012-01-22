@@ -42,10 +42,13 @@ class Cache:
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
+    def _get_entry(self, tag):
+        return self.session.query(Entry).filter_by(tag=tag).first()
+
     def get(self, tag):
         log.info('retrieving from cache: {}'.format(tag))
 
-        entry = self.session.query(Entry).filter_by(tag=tag).first()
+        entry = self._get_entry(tag)
         if not entry:
             return None
 
@@ -59,9 +62,14 @@ class Cache:
 
     def set(self, tag, filename):
         log.info('Cache set: {} -> {}'.format(tag, filename))
-        e = Entry(tag=tag,
-                  filename=filename)
-        self.session.add(e)
+
+        e = self._get_entry(tag)
+        if e:
+            e.filename = filename
+        else:
+            e = Entry(tag=tag,
+                      filename=filename)
+            self.session.add(e)
 
     def trim(self, size):
         log.info('Cache trim: {}'.format(size))
@@ -70,6 +78,9 @@ class Cache:
         if curr_size <= size:
             return
 
+        # TODO: There's probably a way to speed this up which avoids a
+        # count + a series of deletions. Perhaps a subquery...look
+        # into it.
         query = self.session.query(Entry).order_by(Entry.timestamp).limit(curr_size - size)
         for entry in query:
             self.session.delete(entry)
@@ -77,9 +88,10 @@ class Cache:
     def size(self):
         return self.session.query(Entry).count()
 
-    def close(self):
+    def close(self, commit=True):
         log.info('Closing cache')
-        self.session.commit()
+        if commit:
+            self.session.commit()
 
 @contextlib.contextmanager
 def open_cache(filename, size):
@@ -88,5 +100,7 @@ def open_cache(filename, size):
     try:
         yield cache
         cache.trim(size)
-    finally:
         cache.close()
+    except Exception:
+        cache.close(commit=False)
+        raise
