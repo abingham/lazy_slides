@@ -32,6 +32,7 @@ setup(
     install_requires=[
         'futures',
         'pil',
+        'reportlab',
         'sqlalchemy',
         #'baker',
         #'decorator',
