@@ -1,7 +1,7 @@
 import logging
 import os
 import urllib
-from urllib.parse import urlparse
+import urlparse
 import uuid
 
 

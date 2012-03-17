@@ -30,6 +30,7 @@ setup(
     platforms='any',
     setup_requires=[],
     install_requires=[
+        'futures',
         'sqlalchemy',
         #'baker',
         #'decorator',

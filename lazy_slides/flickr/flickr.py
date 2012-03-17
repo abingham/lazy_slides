@@ -24,8 +24,8 @@ __author__ = "James Clarke <james@jamesclarke.info>"
 __version__ = "$Rev$"
 __date__ = "$Date$"
 __copyright__ = "Copyright: 2004-2010 James Clarke; Portions: 2007-2008 Joshua Henderson; Portions: 2011 Andrei Vlad Vacariu"
-from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib import urlencode
+from urllib import urlopen
 from xml.dom import minidom
 import hashlib
 import os

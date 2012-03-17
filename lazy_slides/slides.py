@@ -1,5 +1,5 @@
 import argparse
-import concurrent.futures as futures
+import futures
 import importlib
 import logging
 import os
