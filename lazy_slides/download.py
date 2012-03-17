@@ -1,6 +1,7 @@
+import contextlib
 import logging
 import os
-import urllib
+import urllib2
 import urlparse
 import uuid
 
@@ -17,7 +18,7 @@ def download(url, directory):
     :param directory: The directory into which to save the file.
     '''
 
-    parsed = urlparse(url)
+    parsed = urlparse.urlparse(url)
 
     # Calculate the save-file name
     filename = os.path.split(parsed.path)[1]
@@ -32,7 +33,7 @@ def download(url, directory):
             url, filename))
 
     # Save the URL data to the new filename.
-    with urllib.request.urlopen(url) as infile:
+    with contextlib.closing(urllib2.urlopen(url)) as infile:
         with open(filename, 'wb') as outfile:
             outfile.write(infile.read())
 
