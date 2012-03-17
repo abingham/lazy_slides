@@ -31,6 +31,7 @@ setup(
     setup_requires=[],
     install_requires=[
         'futures',
+        'pil',
         'sqlalchemy',
         #'baker',
         #'decorator',

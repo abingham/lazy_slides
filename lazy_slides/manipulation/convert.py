@@ -1,7 +1,7 @@
 import logging
 import os
 
-from .PythonMagickWand import *
+import Image
 
 
 log = logging.getLogger(__name__)
@@ -9,8 +9,8 @@ log = logging.getLogger(__name__)
 def convert(infilename, target_type='png'):
     '''Convert an image from one type to another.
 
-    This uses MagickWand to convert an input file into another
-    type. After conversion, the original file is deleted.
+    This uses PIL to convert an input file into another
+    type.
 
     :param infilename: The name of the file to convert.
     :param target_type: The new image type to save as.
@@ -24,8 +24,7 @@ def convert(infilename, target_type='png'):
             infilename,
             outfilename))
 
-    wand = NewMagickWand()
-    MagickReadImage(wand, infilename.encode('utf-8'))
-    MagickWriteImage(wand, outfilename.encode('utf-8'))
+    im = Image.open(infilename)
+    im.save(outfilename)
 
     return outfilename

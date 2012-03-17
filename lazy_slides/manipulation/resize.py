@@ -1,6 +1,6 @@
 import logging
 
-from .PythonMagickWand import *
+import Image
 
 
 log = logging.getLogger(__name__)
@@ -20,9 +20,8 @@ def resize(infilename,
             outfilename,
             new_size))
 
-    wand = NewMagickWand()
-    MagickReadImage(wand, infilename.encode('utf-8'))
-    MagickScaleImage(wand, new_size[0], new_size[1])
-    MagickWriteImage(wand, outfilename.encode('utf-8'))
+    im = Image.open(infilename)
+    im.resize(new_size)
+    im.save()
 
     return outfilename
