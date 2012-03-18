@@ -21,7 +21,7 @@ def resize(infilename,
             new_size))
 
     im = Image.open(infilename)
-    im.resize(new_size)
-    im.save()
+    im_resized = im.resize(new_size)
+    im_resized.save(outfilename)
 
     return outfilename
