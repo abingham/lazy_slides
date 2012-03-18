@@ -129,10 +129,6 @@ class Builder:
         url = search.search(tag)
         filename = download.download(url, self.directory)
         filename = manipulation.convert(filename)
-        filename = manipulation.resize(filename,
-                                       filename,
-                                       (self.args.image_width,
-                                        self.args.image_height))
         return (tag, filename)
 
     def run(self, cache):
