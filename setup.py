@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'lazy_slides',
-    version = '0.1',
+    version = '0.2',
     packages = find_packages(),
 
     # metadata for upload to PyPI
