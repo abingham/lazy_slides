@@ -49,14 +49,18 @@ class Cache:
         return self.session.query(Entry).filter_by(tag=tag, engine=engine).first()
 
     def get(self, engine, tag):
-        log.info('retrieving from cache: {}, {}'.format(engine, tag))
+        log.info('retrieving from cache: {} {}'.format(engine, tag))
 
         entry = self._get_entry(engine, tag)
         if not entry:
+            log.info('cache miss: {} {}'.format(engine, tag))
             return None
+
+        log.info('cache hit: {} {}'.format(engine, tag))
 
         # Don't report a cache hit unless the file exists.
         if not os.path.exists(entry.filename):
+            log.info('cache file missing: {} {}'.format(engine, tag))
             # If the filex doesn't exist, remove the cache entry.
             self.session.delete(entry)
             return None
@@ -64,7 +68,7 @@ class Cache:
         return entry.filename
 
     def set(self, engine, tag, filename):
-        log.info('Cache set: {}, {} -> {}'.format(engine, tag, filename))
+        log.info('Cache set: {} {} -> {}'.format(engine, tag, filename))
 
         e = self._get_entry(engine, tag)
         if e:
