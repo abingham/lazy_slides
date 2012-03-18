@@ -15,7 +15,9 @@ def generate_slides(tags,
     for tag in tags:
         c.setPageSize((args.image_width,
                        args.image_height))
-        c.drawImage(tag_map[tag], 0, 0)
+        c.drawImage(tag_map[tag], 0, 0,
+                    width=args.image_width,
+                    height=args.image_height)
         c.showPage()
 
     c.save()
