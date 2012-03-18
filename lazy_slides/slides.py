@@ -128,7 +128,12 @@ class Builder:
         '''
         url = search.search(tag)
         filename = download.download(url, self.directory)
-        return (tag, manipulation.convert(filename))
+        filename = manipulation.convert(filename)
+        filename = manipulation.resize(filename,
+                                       filename,
+                                       (self.args.image_width,
+                                        self.args.image_height))
+        return (tag, filename)
 
     def run(self, cache):
         # Find tag->file mappings in existing cache
