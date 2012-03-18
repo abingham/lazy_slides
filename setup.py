@@ -14,8 +14,8 @@ setup(
     description = "Build a presentation by downloading images based on keywords.",
     license = 'MIT',
     keywords = 'presentation',
-    # url = 'http://bitbucket.org/abingham/roid_rage',
-    # download_url = 'https://bitbucket.org/abingham/roid_rage/src',
+    url = 'http://code.google.com/p/lazy-slides/',
+    download_url = 'http://code.google.com/p/lazy-slides/source/checkout',
     long_description = 'With lazy_slides, you provide a sequence of keywords for the presentation slides you want to make. For each keyword, lazy_slides downloads an image that matches it and creates a slide for you. In the end, you have a presentation without all the work of having to actually create a presentation!',
     zip_safe=True,
     classifiers=[
@@ -34,10 +34,6 @@ setup(
         'pil',
         'reportlab',
         'sqlalchemy',
-        #'baker',
-        #'decorator',
-        # 'pycairo',
-        #'pygame',
         ],
 
     package_data = {
