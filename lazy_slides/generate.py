@@ -13,11 +13,10 @@ def generate_slides(tags,
     '''
     c = canvas.Canvas(outfile)
     for tag in tags:
-        c.drawImage(tag_map[tag],
-                    0,
-                    0,
-                    width=400,
-                    height=200)
+        c.setPageSize((args.image_width,
+                       args.image_height))
+        c.drawImage(tag_map[tag], 0, 0)
         c.showPage()
+
     c.save()
 
