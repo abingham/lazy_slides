@@ -15,8 +15,8 @@ class Entry(Base):
 
     engine = Column(String, primary_key=True)
     tag = Column(String, primary_key=True)
-    width = Column(Integer, primary_key=True, nullable=True)
-    height = Column(Integer, primary_key=True, nullable=True)
+    width = Column(Integer, primary_key=True)
+    height = Column(Integer, primary_key=True)
     filename = Column(String)
     timestamp = Column(DateTime)
 
@@ -65,7 +65,7 @@ class Cache:
                                                    width=width,
                                                    height=height).first()
 
-    def get(self, engine, tag, width=None, height=None):
+    def get(self, engine, tag, width=-1, height=-1):
         log.info('retrieving from cache: {} {} {} {}'.format(
             engine, tag, width, height))
 
@@ -88,7 +88,7 @@ class Cache:
 
         return entry.filename
 
-    def set(self, engine, tag, width, height, filename):
+    def set(self, engine, tag, filename, width=-1, height=-1):
         log.info('Cache set: {} {} {} {} -> {}'.format(
             engine, tag, width, height, filename))
 
