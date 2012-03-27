@@ -1,7 +1,7 @@
 import logging
 import os
 
-import Image
+import PIL.Image
 
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def convert(infilename, target_type='png'):
             infilename,
             outfilename))
 
-    im = Image.open(infilename)
+    im = PIL.Image.open(infilename)
     im.save(outfilename)
 
     return outfilename

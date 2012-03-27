@@ -1,6 +1,6 @@
 import logging
 
-import Image
+import PIL
 
 
 log = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def resize(infilename,
             outfilename,
             new_size))
 
-    im = Image.open(infilename)
+    im = PIL.Image.open(infilename)
     im_resized = im.resize(new_size)
     im_resized.save(outfilename)
 
