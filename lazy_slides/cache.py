@@ -2,7 +2,6 @@ import contextlib
 import datetime
 import logging
 import os
-import threading
 
 import sqlalchemy
 from sqlalchemy import Column, DateTime, Integer, String
@@ -49,12 +48,6 @@ class Entry(Base):
 
 log = logging.getLogger(__name__)
 
-def locking(f):
-    def inner(self, *args, **kwargs):
-        with self.lock:
-            return f(self, *args, **kwargs)
-    return inner
-
 class Cache:
     def __init__(self, filename):
         self.engine = sqlalchemy.create_engine(
@@ -66,15 +59,12 @@ class Cache:
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-        self.lock = threading.RLock()
-
     def _get_entry(self, engine, tag, width, height):
         return self.session.query(Entry).filter_by(tag=tag,
                                                    engine=engine,
                                                    width=width,
                                                    height=height).first()
 
-    @locking
     def get(self, engine, tag, width=None, height=None):
         log.info('retrieving from cache: {} {} {} {}'.format(
             engine, tag, width, height))
@@ -98,7 +88,6 @@ class Cache:
 
         return entry.filename
 
-    @locking
     def set(self, engine, tag, width, height, filename):
         log.info('Cache set: {} {} {} {} -> {}'.format(
             engine, tag, width, height, filename))
@@ -106,6 +95,7 @@ class Cache:
         e = self._get_entry(engine, tag, width, height)
         if e:
             e.filename = filename
+            e.timestamp = datetime.datetime.now()
         else:
             e = Entry(engine=engine,
                       tag=tag,
@@ -114,7 +104,6 @@ class Cache:
                       height=height)
             self.session.add(e)
 
-    @locking
     def trim(self, size):
         log.info('Cache trim: {}'.format(size))
 
@@ -129,11 +118,9 @@ class Cache:
         for entry in query:
             self.session.delete(entry)
 
-    @locking
     def size(self):
         return self.session.query(Entry).count()
 
-    @locking
     def close(self, commit=True):
         log.info('Closing cache')
         if commit:
