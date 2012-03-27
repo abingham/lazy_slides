@@ -7,9 +7,8 @@ import sys
 
 from .cache import open_cache
 from .cpu_count import cpu_count
-from . import download
 from . import generate
-from . import manipulation
+from .resolver import Resolver
 from . import search
 
 log = logging.getLogger(__name__)
@@ -118,59 +117,16 @@ def init_search_function(search_function):
     search.search_function = getattr(mod, func_name)
 
 class Builder:
-    def __init__(self, args):
-        self.args = args
-        self.directory = self.args.directory
-
-    def fetch_base(self,
-                   search_function,
-                   tag,
-                   cache):
-        fname = cache.get(search_function, tag)
-        if fname is not None:
-            return fname
-
-        url = search.search(tag)
-        filename = download.download(url, self.directory)
-        filename = manipulation.convert(filename)
-
-        # TODO: Delete original downloaded file if it's different than
-        # the converted version.
-
-        cache.set(search_function, tag, None, None, filename)
-        return filename
-
-    def fetch(self,
-              search_function,
-              tag,
-              width,
-              height,
-              cache):
-        '''Search, download, and convert a single image based on a
-        single tag.
-        '''
-
-        # See if we've got the resized image already
-        fname = cache.get(search_function, tag, width, height)
-        if fname is not None:
-            return (tag, fname)
-
-        base_fname = self.fetch_base(search_function, tag, cache)
-        (fname, ext) = os.path.splitext(base_fname)
-
-        fname = '{}.{}.{}{}'.format(
-            fname, width, height, ext)
-
-        manipulation.resize(base_fname, fname, (width, height))
-
-        cache.set(search_function, tag, width, height, fname)
-
-        return (tag, fname)
+    def __init__(self, config):
+        self.config = config
+        self.directory = self.config.directory
 
     def run(self, cache):
+        resolvers = [Resolver(tag, self.config, cache) for tag in set(self.config.tags)]
+
         # Determine how many workers we should use. If no number is
         # specified, make one per tag.
-        num_workers = self.args.num_workers
+        num_workers = self.config.num_workers
         if num_workers < 1:
             try:
                 num_workers = cpu_count()
@@ -182,37 +138,37 @@ class Builder:
         log.info('Using {} workers'.format(num_workers))
 
         with futures.ThreadPoolExecutor(num_workers) as e:
-            func = lambda tag: self.fetch(self.args.search_function,
-                                          tag,
-                                          self.args.image_width,
-                                          self.args.image_height,
-                                          cache)
-
             tag_map = dict(
-                e.map(func, set(self.args.tags)))
+                e.map(
+                    Resolver.resolve,
+                    resolvers))
+
+        # Update cache
+        for r in resolvers:
+            r.update_cache(cache)
 
         # Generate the slideshow.
-        log.info('Writing output to file {}'.format(self.args.output))
-        with open(self.args.output, 'w') as outfile:
+        log.info('Writing output to file {}'.format(self.config.output))
+        with open(self.config.output, 'w') as outfile:
             generate.generate_slides(
-                self.args.tags,
+                self.config.tags,
                 tag_map,
                 outfile,
-                self.args)
+                self.config)
 
 def main():
-    args = parse_args()
-    init_logging(args.verbose)
-    init_search_function(args.search_function)
+    config = parse_args()
+    init_logging(config.verbose)
+    init_search_function(config.search_function)
 
-    bld = Builder(args)
+    bld = Builder(config)
 
     try:
-        if not os.path.exists(args.directory):
-            log.info('Creating data directory: {}'.format(args.directory))
-            os.makedirs(args.directory)
+        if not os.path.exists(config.directory):
+            log.info('Creating data directory: {}'.format(config.directory))
+            os.makedirs(config.directory)
 
-        cache_file = os.path.join(args.directory, 'cache.db')
+        cache_file = os.path.join(config.directory, 'cache.db')
         with open_cache(cache_file, 100) as cache:
             bld.run(cache)
     except Exception:
