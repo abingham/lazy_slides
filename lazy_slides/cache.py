@@ -2,6 +2,7 @@ import contextlib
 import datetime
 import logging
 import os
+import threading
 
 import sqlalchemy
 from sqlalchemy import Column, DateTime, Integer, String
@@ -15,12 +16,22 @@ class Entry(Base):
 
     engine = Column(String, primary_key=True)
     tag = Column(String, primary_key=True)
+    width = Column(Integer, primary_key=True, nullable=True)
+    height = Column(Integer, primary_key=True, nullable=True)
     filename = Column(String)
     timestamp = Column(DateTime)
 
-    def __init__(self, engine, tag, filename, timestamp=None):
+    def __init__(self,
+                 engine,
+                 tag,
+                 width,
+                 height,
+                 filename,
+                 timestamp=None):
         self.engine = engine
         self.tag = tag
+        self.width = width
+        self.height = height
         self.filename = filename
         if timestamp:
             self.timestamp = timestamp
@@ -28,57 +39,82 @@ class Entry(Base):
             self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
-        return '<Entry(engine="{}", tag="{}", filename="{}", timestamp={})>'.format(
+        return '<Entry(engine="{}", tag="{}", width="{}", height="{}", filename="{}", timestamp={})>'.format(
             self.engine,
             self.tag,
+            self.width,
+            self.height,
             self.filename,
             self.timestamp)
 
 log = logging.getLogger(__name__)
 
+def locking(f):
+    def inner(self, *args, **kwargs):
+        with self.lock:
+            return f(self, *args, **kwargs)
+    return inner
+
 class Cache:
     def __init__(self, filename):
-        self.engine = sqlalchemy.create_engine('sqlite:///{}'.format(filename))
+        self.engine = sqlalchemy.create_engine(
+            'sqlite:///{}?check_same_thread=False'.format(filename))
+
 
         Base.metadata.create_all(self.engine)
 
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def _get_entry(self, engine, tag):
-        return self.session.query(Entry).filter_by(tag=tag, engine=engine).first()
+        self.lock = threading.RLock()
 
-    def get(self, engine, tag):
-        log.info('retrieving from cache: {} {}'.format(engine, tag))
+    def _get_entry(self, engine, tag, width, height):
+        return self.session.query(Entry).filter_by(tag=tag,
+                                                   engine=engine,
+                                                   width=width,
+                                                   height=height).first()
 
-        entry = self._get_entry(engine, tag)
+    @locking
+    def get(self, engine, tag, width=None, height=None):
+        log.info('retrieving from cache: {} {} {} {}'.format(
+            engine, tag, width, height))
+
+        entry = self._get_entry(engine, tag, width, height)
         if not entry:
-            log.info('cache miss: {} {}'.format(engine, tag))
+            log.info('cache miss: {} {} {} {}'.format(
+                engine, tag, width, height))
             return None
 
-        log.info('cache hit: {} {}'.format(engine, tag))
+        log.info('cache hit: {} {} {} {}'.format(
+            engine, tag, width, height))
 
         # Don't report a cache hit unless the file exists.
         if not os.path.exists(entry.filename):
-            log.info('cache file missing: {} {}'.format(engine, tag))
-            # If the filex doesn't exist, remove the cache entry.
+            log.info('cache file missing: {} {} {} {}'.format(
+                engine, tag, width, height))
+            # If the file doesn't exist, remove the cache entry.
             self.session.delete(entry)
             return None
 
         return entry.filename
 
-    def set(self, engine, tag, filename):
-        log.info('Cache set: {} {} -> {}'.format(engine, tag, filename))
+    @locking
+    def set(self, engine, tag, width, height, filename):
+        log.info('Cache set: {} {} {} {} -> {}'.format(
+            engine, tag, width, height, filename))
 
-        e = self._get_entry(engine, tag)
+        e = self._get_entry(engine, tag, width, height)
         if e:
             e.filename = filename
         else:
             e = Entry(engine=engine,
                       tag=tag,
-                      filename=filename)
+                      filename=filename,
+                      width=width,
+                      height=height)
             self.session.add(e)
 
+    @locking
     def trim(self, size):
         log.info('Cache trim: {}'.format(size))
 
@@ -93,9 +129,11 @@ class Cache:
         for entry in query:
             self.session.delete(entry)
 
+    @locking
     def size(self):
         return self.session.query(Entry).count()
 
+    @locking
     def close(self, commit=True):
         log.info('Closing cache')
         if commit:
