@@ -8,22 +8,14 @@ class Resolver:
     def __init__(self,
                  tag,
                  config,
-                 cache):
+                 fname,
+                 base_fname):
         self.config = config
         self.tag = tag
+        self.fname = fname
+        self.base_fname = base_fname
 
-        self.fname = cache.get(
-            self.config.search_function,
-            tag,
-            self.config.image_width,
-            self.config.image_height)
-
-        self.base_fname = None
-
-        if self.fname is None:
-            self.base_fname = cache.get(
-                self.config.search_function,
-                tag)
+        self.success = False
 
     def _resolve_base(self):
         if self.base_fname:
@@ -58,19 +50,6 @@ class Resolver:
                                  self.config.image_height))
 
         assert self.fname is not None
+
+        self.success = True
         return (self.tag, self.fname)
-
-    def update_cache(self, cache):
-        if self.fname is not None:
-            cache.set(self.config.search_function,
-                      self.tag,
-                      self.config.image_width,
-                      self.config.image_height,
-                      self.fname)
-
-        if self.base_fname is not None:
-            cache.set(self.config.search_function,
-                      self.tag,
-                      None,
-                      None,
-                      self.base_fname)

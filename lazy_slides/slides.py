@@ -121,32 +121,66 @@ class Builder:
         self.config = config
         self.directory = self.config.directory
 
-    def run(self, cache):
-        resolvers = [Resolver(tag, self.config, cache) for tag in set(self.config.tags)]
+    def _create_resolvers(self, cache):
+        return [Resolver(tag=tag,
+                         config=self.config,
+                         fname=cache.get(
+                             self.config.search_function,
+                             tag,
+                             self.config.image_width,
+                             self.config.image_height),
+                         base_fname=cache.get(
+                             self.config.search_function,
+                             tag))
+                for tag in set(self.config.tags)]
 
-        # Determine how many workers we should use. If no number is
-        # specified, make one per tag.
+    def _calculate_num_workers(self):
+        '''Determine how many workers we should use.
+
+        If no number is specified, make one per tag.
+        '''
+
         num_workers = self.config.num_workers
         if num_workers < 1:
             try:
                 num_workers = cpu_count()
             except NotImplementedError:
-
                 log.info('num_cpus() not implemented. Using default worker count.')
                 num_workers = 4
+        return num_workers
 
+    def _build_tag_map(self, resolvers):
+        num_workers = self._calculate_num_workers()
         log.info('Using {} workers'.format(num_workers))
 
+        tag_map = {}
         with futures.ThreadPoolExecutor(num_workers) as e:
-            tag_map = dict(
-                e.map(
-                    Resolver.resolve,
-                    resolvers))
+            for result in [e.submit(r.resolve) for r in resolvers]:
+                try:
+                    rs = result.result()
+                    tag_map[rs[0]] = rs[1]
+                except Exception:
+                    log.exception('Exception while fetching result.')
+        return tag_map
 
-        # Update cache
+    def _update_cache(self, resolvers, cache):
+        rslt = True
         for r in resolvers:
-            r.update_cache(cache)
+            if r.success:
+                cache.set(r.config.search_function,
+                          r.tag,
+                          r.fname,
+                          r.config.image_width,
+                          r.config.image_height)
+                cache.set(r.config.search_function,
+                          r.tag,
+                          r.base_fname)
+            else:
+                rslt = False
 
+        return rslt
+
+    def _generate_slides(self, tag_map):
         # Generate the slideshow.
         log.info('Writing output to file {}'.format(self.config.output))
         with open(self.config.output, 'w') as outfile:
@@ -155,6 +189,18 @@ class Builder:
                 tag_map,
                 outfile,
                 self.config)
+
+    def run(self, cache):
+        resolvers = self._create_resolvers(cache)
+
+        tag_map = self._build_tag_map(resolvers)
+
+        if not self._update_cache(resolvers, cache):
+            # If there were resolver failures, don't generate slides
+            log.error('Not all slides could be made. Exiting.')
+            return
+
+        self._generate_slides(tag_map)
 
 def main():
     config = parse_args()
