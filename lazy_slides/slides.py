@@ -122,22 +122,52 @@ class Builder:
         self.args = args
         self.directory = self.args.directory
 
-    def fetch_file(self, tag):
-        '''Search, download, and convert a single image based on a
-        single tag.
-        '''
+    def fetch_base(self,
+                   search_function,
+                   tag,
+                   cache):
+        fname = cache.get(search_function, tag)
+        if fname is not None:
+            return fname
+
         url = search.search(tag)
         filename = download.download(url, self.directory)
         filename = manipulation.convert(filename)
-        return (tag, filename)
+
+        # TODO: Delete original downloaded file if it's different than
+        # the converted version.
+
+        cache.set(search_function, tag, None, None, filename)
+        return filename
+
+    def fetch(self,
+              search_function,
+              tag,
+              width,
+              height,
+              cache):
+        '''Search, download, and convert a single image based on a
+        single tag.
+        '''
+
+        # See if we've got the resized image already
+        fname = cache.get(search_function, tag, width, height)
+        if fname is not None:
+            return (tag, fname)
+
+        base_fname = self.fetch_base(search_function, tag, cache)
+        (fname, ext) = os.path.splitext(base_fname)
+
+        fname = '{}.{}.{}{}'.format(
+            fname, width, height, ext)
+
+        manipulation.resize(base_fname, fname, (width, height))
+
+        cache.set(search_function, tag, width, height, fname)
+
+        return (tag, fname)
 
     def run(self, cache):
-        # Find tag->file mappings in existing cache
-        tag_map = { t:cache.get(self.args.search_function, t) for t in set(self.args.tags) }
-
-        # Figure out which tags are missing files
-        missing_tags = [t for t,f in tag_map.items() if f is None]
-
         # Determine how many workers we should use. If no number is
         # specified, make one per tag.
         num_workers = self.args.num_workers
@@ -151,15 +181,15 @@ class Builder:
 
         log.info('Using {} workers'.format(num_workers))
 
-        # Download and png-convert files for the missing tags
         with futures.ThreadPoolExecutor(num_workers) as e:
-            tag_map.update(
-                dict(e.map(self.fetch_file,
-                           missing_tags)))
+            func = lambda tag: self.fetch(self.args.search_function,
+                                          tag,
+                                          self.args.image_width,
+                                          self.args.image_height,
+                                          cache)
 
-        # Update the cache with newly-retrieved files
-        for tag in missing_tags:
-            cache.set(self.args.search_function, tag, tag_map[tag])
+            tag_map = dict(
+                e.map(func, set(self.args.tags)))
 
         # Generate the slideshow.
         log.info('Writing output to file {}'.format(self.args.output))
