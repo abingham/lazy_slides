@@ -34,6 +34,7 @@ setup(
         'pillow',
         'reportlab',
         'sqlalchemy',
+        'SimpleBing',
         ],
 
     package_data = {

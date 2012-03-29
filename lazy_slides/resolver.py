@@ -1,8 +1,11 @@
+import logging
 import os.path
 
 from . import download
 from . import manipulation
 from . import search
+
+log = logging.getLogger(__name__)
 
 class Resolver:
     def __init__(self,
@@ -17,15 +20,27 @@ class Resolver:
 
         self.success = False
 
+    def _download(self, urls):
+        for url in urls:
+            try:
+                filename = download.download(
+                    url,
+                    self.config.directory)
+
+                return filename
+            except Exception:
+                log.exception('Error processing url {}'.format(url))
+
+        raise IOError(
+            'Unable to download image for tag {}'.format(
+                self.tag))
+
     def _resolve_base(self):
         if self.base_fname:
             return
 
-        url = search.search(self.tag)
-        filename = download.download(
-            url,
-            self.config.directory)
-
+        urls = search.search(self.tag, count=5)
+        filename = self._download(urls)
         self.base_fname = manipulation.convert(filename)
 
         # TODO: Delete original downloaded file if it's different than

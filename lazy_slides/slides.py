@@ -31,7 +31,7 @@ def parse_args():
         '-o, --output',
         dest='output',
         #action='store_const',
-        default='slides.beamer',
+        default='slides.pdf',
         metavar='F',
         help='The filename for the output.')
     parser.add_argument(

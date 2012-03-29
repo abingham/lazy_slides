@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 # takes in a tag and finds a matching URL.
 search_function = None
 
-def search(tag):
+def search(tag, count):
     '''Search for an image file matching a given tag using the
     configured search function.
 
@@ -31,7 +31,7 @@ def search(tag):
             'using search_photos()!')
 
     log.info('searching for images tagged with "{}"'.format(tag))
-    url = search_function(tag=tag)
+    url = search_function(tag=tag, count=count)
 
     if url is None:
         raise KeyError('No results for "{}"'.format(tag))
