@@ -1,0 +1,7 @@
+.lazy_slides
+__pycache__
+build
+env
+dist
+*.egg-info
+*.pyc
