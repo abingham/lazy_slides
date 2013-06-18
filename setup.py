@@ -33,8 +33,8 @@ setup(
         'futures',
         'pillow',
         'reportlab',
+        'requests',
         'sqlalchemy',
-        'SimpleBing',
         ],
 
     package_data = {
@@ -47,4 +47,3 @@ setup(
             ],
         },
     )
-
